@@ -7,9 +7,9 @@ function SingleQuestion(props) {
        // do if else bebow to make option disabled or not
 
         return (
-            <div className={props.uid}>
+            <div >
                 
-<input type="radio" id={aIndex} name={props.uid} value={answerOption} disabled={false} />
+<input type="radio" id={aIndex} name={props.uid} value={answerOption} disabled={props.completed} className="option" onChange={(e) => props.onChange( e,props.qindex,props.questionType,answerOption)} />
                 <label htmlFor={aIndex}>{answerOption}</label><br />
            
 
@@ -17,7 +17,14 @@ function SingleQuestion(props) {
         );
 
     });
-    return (<div>
+
+    let classType="question";
+
+    if(props.completed && !props.correct){
+
+        classType="incorrect"
+    }
+    return (<div id={props.uid} className={classType}>
         <h4>{props.question}</h4>
        {renderedOptions}
        <br></br>
