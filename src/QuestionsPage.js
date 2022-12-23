@@ -9,39 +9,7 @@ const numberOfFilms = 4;
 
 const preSetSeed = true;
 
-const movObjects = [
-    {
-        "title": "ironMan",
-        "image": 'IronMan.jpg',
-        "description": 'A billionaire industrialist and genius inventor, Tony Stark (Robert Downey Jr.),is conducting weapons tests overseas, but terrorists kidnap him to force him to build adevastatingweapon. Instead, he builds an armored suit and upends his captors.',
-        "rating": 4.7,
-        "numbOfReview": 200,
-        "video": 'https://www.youtube.com/embed/8ugaeA-nMTc'
 
-    },
-    {
-        "title": "ironMan2",
-        "image": 'IronMan2.jpg',
-        "description": 'A billionaire industrialist and genius inventor, Tony Stark (Robert Downey Jr.),is conducting weapons tests overseas, but terrorists kidnap him to force him to build adevastatingweapon. Instead, he builds an armored suit and upends his captors.',
-        "rating": 4.7,
-        "numbOfReview": 200,
-        "video": 'https://www.youtube.com/embed/8ugaeA-nMTc'
-    }, {
-        "title": "ironMan3",
-        "image": 'IronMan.jpg',
-        "description": 'A billionaire industrialist and genius inventor, Tony Stark (Robert Downey Jr.),is conducting weapons tests overseas, but terrorists kidnap him to force him to build adevastatingweapon. Instead, he builds an armored suit and upends his captors.',
-        "rating": 4.7,
-        "numbOfReview": 200,
-        "video": 'https://www.youtube.com/embed/8ugaeA-nMTc'
-    },
-    {
-        "title": "ironMan4",
-        "image": 'IronMan2.jpg',
-        "description": 'A billionaire industrialist and genius inventor, Tony Stark (Robert Downey Jr.),is conducting weapons tests overseas, but terrorists kidnap him to force him to build adevastatingweapon. Instead, he builds an armored suit and upends his captors.',
-        "rating": 4.7,
-        "numbOfReview": 200,
-        "video": 'https://www.youtube.com/embed/8ugaeA-nMTc'
-    }]
 
 function getSeed() {
 
@@ -51,7 +19,6 @@ function getSeed() {
     } else {
 
         let seed = Math.floor(Math.random() * 10);
-        console.log(seed)
 
         return seed;
     }
@@ -68,29 +35,46 @@ function populateInitAnswersState(numberOfAnswers) {
     }
     return answerStateArray;
 }
+
+
 async function getMovies() {
-    const data = await axios.get('http://localhost:8080/home/getRandomMovies/' + getSeed() + '/' + numberOfFilms);
+    const data = await axios.get('http://ec2-3-17-239-145.us-east-2.compute.amazonaws.com:8080/home/getRandomMovies/' + getSeed() + '/' + numberOfFilms);
     return data.data;
 }
 
 async function getLanguageQuestion(filmid) {
-    let tempseed = getSeed();
+    
 
-    const data = await axios.get('http://localhost:8080/home/getYearQuestion/' + filmid + '/' + filmid)
+    const data = await axios.get('http://ec2-3-17-239-145.us-east-2.compute.amazonaws.com:8080/home/getYearQuestion/' + filmid + '/' + filmid)
     return data.data;
 }
+
+async function getActorQuestion(filmid) {
+    
+
+    const data = await axios.get('http://ec2-3-17-239-145.us-east-2.compute.amazonaws.com:8080/home/getActorQuestion/' + filmid + '/' + filmid)
+    return data.data;
+}
+
+async function getCategoryQuestion(filmid) {
+    
+
+    const data = await axios.get('http://ec2-3-17-239-145.us-east-2.compute.amazonaws.com:8080/home/getCategoryQuestion/' + filmid + '/' + filmid)
+    return data.data;
+}
+
 
 async function getYearQuestion(filmid) {
 
-    
+
     let tempseed = getSeed();
 
-    const data = await axios.get('http://localhost:8080/home/getLanguageQuestion/' + filmid + '/' + filmid)
+    const data = await axios.get('http://ec2-3-17-239-145.us-east-2.compute.amazonaws.com:8080/home/getLanguageQuestion/' + filmid + '/' + filmid)
     return data.data;
 }
 
 
-function checkIfAllQuestionsAnswered(userAnswers){
+function checkIfAllQuestionsAnswered(userAnswers) {
     let questionsComplete = true;
     for (let answerIndex = 0; answerIndex < userAnswers.length; answerIndex++) {
         if (userAnswers[answerIndex].answer == null) {
@@ -104,9 +88,11 @@ function checkIfAllQuestionsAnswered(userAnswers){
     return questionsComplete
 
 }
-function QuestionPage() { 
+function QuestionPage() {
     const [correctAnswerCounter, setCorrectAnswerCounter] = useState(0)
     const [isLoading, setIsLoading] = useState(true);
+
+    const [isUserError, setIsUserError] = useState(false);
 
     const [userAnswers, setUserAnswer] = useState(null)
 
@@ -114,7 +100,6 @@ function QuestionPage() {
 
     const handleChange = (e, questionIndex, questionType, value) => {
 
-        console.log(questionIndex + "" + value);
         setUserAnswer(userAnswers.map((userAnswer, index) => {
             if (index === questionIndex) {
                 // Create a *new* object with changes
@@ -124,17 +109,16 @@ function QuestionPage() {
                 return userAnswer;
             }
         }))
-        console.log("update");
-        console.log(userAnswers);
+        
 
     };
-    console.log(questions);
+    
 
-   
+
 
     const handleSubmit = () => {
 
-        
+        setIsUserError(false);
 
         if (checkIfAllQuestionsAnswered(userAnswers)) {
             //
@@ -154,15 +138,14 @@ function QuestionPage() {
             setUserAnswer(newUserAnswers);
 
             setCorrectAnswerCounter(answeredCorrectlyCounter)
-            
-                setquizCompleted(true);
-            
 
-            console.log("counter "+answeredCorrectlyCounter)
+            setquizCompleted(true);
 
-        }else{
 
-            console.log("not complete");
+
+        } else {
+
+            setIsUserError(true);
         }
 
 
@@ -174,65 +157,72 @@ function QuestionPage() {
             try {
                 setIsLoading(true);
                 films = await getMovies();
-                console.log(films);
+
 
                 questions = await Promise.all(films.map((film, fIndex) => getYearQuestion(film.filmid)));
 
                 films = await getMovies();
-               questions= questions.concat(await Promise.all(films.map((film, fIndex) => getLanguageQuestion(film.filmid))))
-                
+                questions = questions.concat(await Promise.all(films.map((film, fIndex) => getLanguageQuestion(film.filmid))))
+                films = await getMovies();
+                questions = questions.concat(await Promise.all(films.map((film, fIndex) => getActorQuestion(film.filmid))))
+                films = await getMovies();
+                questions = questions.concat(await Promise.all(films.map((film, fIndex) => getCategoryQuestion(film.filmid))))
 
-                console.log();
-                // setPosts(data);
-            } catch (error) {
-                // setIsError(true);
+
+
             } finally {
                 setIsLoading(false);
             }
         })();
     }, []);
 
+
+
+
     let renderedQuestions = "";
 
-if(isLoading||questions===null){
-
-    
-        return(<div><h1>Loading</h1></div>)
-
-    
-}else  if (userAnswers == null) {
-    setUserAnswer(populateInitAnswersState(questions.length));
-} else if (questions != null) {
-    renderedQuestions = questions.map((question, index) => {
-    
-        const uniqueInputKey = index + question.questionType;
-        console.log(uniqueInputKey);
-
-        return (
-            <SingleQuestion key={uniqueInputKey} uid={uniqueInputKey} qindex={index} question={question.question} questionType={question.questionType} answers={question.possibleAnswers}correct={userAnswers[index].correct} completed={quizCompleted} onChange={handleChange} />
-        );
-
-    });
-
-}
-   
-    console.log(userAnswers);
-  
+    if (isLoading || questions === null) {
 
 
-   
-console.log(userAnswers);
+        return (<div><h1>Loading</h1></div>)
+
+
+    } else if (userAnswers == null) {
+        setUserAnswer(populateInitAnswersState(questions.length));
+    } else if (questions != null) {
+        renderedQuestions = questions.map((question, index) => {
+
+            const uniqueInputKey = index + "a";
+
+            return (
+                <SingleQuestion key={uniqueInputKey} uid={uniqueInputKey} qindex={index} correctAnswer={question.correctAnswer} question={question.question} questionType={question.questionType} answers={question.possibleAnswers} correct={userAnswers[index].correct} completed={quizCompleted} onChange={handleChange} />
+            );
+
+        });
+
+    }
+
+
+
+
+
+
 
     return (
 
         <div >
 
-            <h2 id='allmovies'>Mark: {correctAnswerCounter}/{questions.length}</h2><br />
+            <h2 id='mark'>Mark: {correctAnswerCounter}/{questions.length}</h2><br />
             <div className="container center">
                 {renderedQuestions}
                 <input id="submitQuiz" type="button" value="Submit" onClick={handleSubmit} /><br />
 
             </div>
+            {isUserError === true &&
+                <h2 id="userError">
+                    please complete questions before submitting
+                </h2>
+            }
         </div>
     )
 }
